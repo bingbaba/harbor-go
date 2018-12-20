@@ -11,6 +11,7 @@ import (
 const (
 	PATH_FMT_REPO_LIST     = "/api/repositories"
 	PATH_FMT_REPOTAGS_LIST = "/api/repositories/%s/%s/tags"
+	PATH_FMT_REPOTAG       = "/api/repositories/%s/%s/tags/%s"
 )
 
 type RepoSortType = string
@@ -90,7 +91,7 @@ func (c *Client) ListReposByProjectName(ctx context.Context, name string) (total
 	return c.ListRepos(ctx, p.ProjectID, nil)
 }
 
-func (c *Client) ListRepoTags(ctx context.Context, project_name string, repo_name string) ([]*models.TagDetail, error) {
+func (c *Client) ListRepoTags(ctx context.Context, project_name, repo_name string) ([]*models.TagDetail, error) {
 	ret := make([]*models.TagDetail, 0)
 
 	path := fmt.Sprintf(PATH_FMT_REPOTAGS_LIST, project_name, repo_name)
@@ -105,4 +106,47 @@ func (c *Client) ListRepoTags(ctx context.Context, project_name string, repo_nam
 	}
 
 	return ret, nil
+}
+
+func (c *Client) GetRepoTag(ctx context.Context, project_name, repo_name, tag_name string) (*models.TagDetail, error) {
+	ret := new(models.TagDetail)
+
+	path := fmt.Sprintf(PATH_FMT_REPOTAG, project_name, repo_name, tag_name)
+	req, err := http.NewRequest(http.MethodGet, c.host+path, nil)
+	if err != nil {
+		return ret, err
+	}
+
+	err = c.doJson(ctx, req, ret)
+	if err != nil {
+		return ret, err
+	}
+
+	return ret, nil
+}
+
+func (c *Client) DeleteRepoTag(ctx context.Context, project_name, repo_name, tag_name string) (bool, error) {
+
+	path := fmt.Sprintf(PATH_FMT_REPOTAG, project_name, repo_name, tag_name)
+	req, err := http.NewRequest(http.MethodDelete, c.host+path, nil)
+	if err != nil {
+		return false, err
+	}
+
+	code, body, err := c.do(ctx, req)
+	if err != nil {
+		return false, err
+	}
+	defer body.Close()
+
+	switch code {
+	case 400, 404:
+		return false, NotFoundError
+	case 401, 403:
+		return false, NotAllowError
+	case 200:
+		return true, nil
+	default:
+		return false, ServerInternalError
+	}
 }
