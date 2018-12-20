@@ -1,6 +1,3 @@
-# harbor-go
-
-```golang
 package main
 
 import (
@@ -33,5 +30,3 @@ func main() {
 		fmt.Printf("%+v\n", p)
 	}
 }
-
-```
