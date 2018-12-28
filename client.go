@@ -9,12 +9,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type Client struct {
 	http_client *http.Client
 	host        string
+	hostname    string
 	username    string
 	password    string
 }
@@ -52,9 +54,16 @@ func NewClient(http_client *http.Client, host, username, password string, sniffe
 		http_client = http.DefaultClient
 	}
 
+	array := strings.SplitN(host, "//", 2)
+	if len(array) != 2 {
+		return nil, fmt.Errorf("parse host failed")
+	}
+	hostname := array[1]
+
 	client := &Client{
 		http_client: http_client,
 		host:        host,
+		hostname:    hostname,
 		username:    username,
 		password:    password,
 	}
@@ -72,6 +81,9 @@ func NewClient(http_client *http.Client, host, username, password string, sniffe
 	return client, nil
 }
 
+func (c *Client) Image(project, repo, tag string) string {
+	return fmt.Sprintf("%s/%s/%s:%s", c.hostname, project, repo, tag)
+}
 func (c *Client) do(ctx context.Context, req *http.Request) (int, io.ReadCloser, error) {
 	resp, err := c._do(ctx, req)
 	if err != nil {
