@@ -19,6 +19,15 @@ type Project struct {
 	Metadata     map[string]string `orm:"-" json:"metadata"`
 }
 
+type InitProject struct {
+	ProjectName string          `json:"project_name"`
+	Metadata    ProjectMetadata `json:"metadata"`
+}
+
+type ProjectMetadata struct {
+	Public string `json:"public"`
+}
+
 func (p *Project) IsDeleted() bool {
 	return getBool(p.Deleted)
 }

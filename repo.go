@@ -3,7 +3,7 @@ package harbor
 import (
 	"context"
 	"fmt"
-	"github.com/bingbaba/harbor-go/models"
+	"harbor-go/models"
 	"net/http"
 	"net/url"
 )
