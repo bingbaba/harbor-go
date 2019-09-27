@@ -119,13 +119,6 @@ func (c *Client) CreateUser(ctx context.Context, opt *UserInfo) (bool, error) {
 	}
 	defer body.Close()
 
-	// loacl use test
-	//body_bite, err := ioutil.ReadAll(body)
-	//
-	//if err != nil {
-	//	return false, errors.New("aaa")
-	//}
-
 	switch code {
 	case 200, 201:
 		return true, nil
