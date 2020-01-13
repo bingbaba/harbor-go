@@ -22,3 +22,14 @@ type Project struct {
 func (p *Project) IsDeleted() bool {
 	return getBool(p.Deleted)
 }
+
+type CreateProject struct {
+	ProjectName  string         `json:"project_name"`
+	Metadata     CreateMetadata `json:"metadata"`
+	CountLimit   int            `json:"count_limit"`
+	StorageLimit int            `json:"storage_limit"`
+}
+
+type CreateMetadata struct {
+	Public string `json:"public"`
+}
