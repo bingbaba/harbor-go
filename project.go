@@ -1,9 +1,12 @@
 package harbor
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/bingbaba/harbor-go/models"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -42,7 +45,7 @@ func (opt *ProjectOption) Urls() url.Values {
 	return v
 }
 
-func (c *Client) ListProjects(ctx context.Context, opt *ProjectOption) ([]*models.Project, error) {
+func (c *Client) ListProjects(ctx context.Context, opt *ProjectOption) (int, []*models.Project, error) {
 	var ret []*models.Project
 
 	path := PATH_FMT_PROJECT_LIST
@@ -53,15 +56,22 @@ func (c *Client) ListProjects(ctx context.Context, opt *ProjectOption) ([]*model
 	//log.Print(path)
 	req, err := http.NewRequest(http.MethodGet, c.host+path, nil)
 	if err != nil {
-		return ret, err
+		return 0, ret, err
 	}
 
-	err = c.doJson(ctx, req, &ret)
-	if err != nil {
-		return ret, err
+	total, code, err := c.doJsonWithTotal(ctx, req, &ret)
+	switch code {
+	case 400, 404:
+		return 0, ret, NotFoundError
+	case 403:
+		return 0, ret, NotAllowError
+	case 500:
+		return 0, ret, CallApiError
+	case 200:
+		return total, ret, nil
+	default:
+		return 0, ret, err
 	}
-
-	return ret, nil
 }
 
 func (c *Client) GetProject(ctx context.Context, id int64) (*models.Project, error) {
@@ -112,15 +122,6 @@ func (c *Client) DeleteProject(ctx context.Context, id int64) (deleted bool, err
 }
 
 func (c *Client) ProjectIsExist(ctx context.Context, name string) (bool, error) {
-	//projects, err := c.ListProjects(ctx, &ProjectOption{Name: name})
-	//if err != nil {
-	//	return false, err
-	//}
-	//if len(projects) > 0 {
-	//	return true, nil
-	//} else {
-	//	return false, nil
-	//}
 
 	path := fmt.Sprintf("%s?project_name=%s", PATH_FMT_PROJECT_LIST, name)
 	//log.Print(path)
@@ -150,13 +151,43 @@ func (c *Client) ProjectIsExist(ctx context.Context, name string) (bool, error) 
 }
 
 func (c *Client) GetProjectByName(ctx context.Context, name string) (*models.Project, error) {
-	projects, err := c.ListProjects(ctx, &ProjectOption{Name: name})
+	_, projects, err := c.ListProjects(ctx, &ProjectOption{Name: name})
 	if err != nil {
 		return nil, err
 	}
 	if len(projects) == 0 {
 		return nil, NotFoundError
 	}
+	if projects[0].Name == name {
+		return projects[0], nil
+	}
+	return nil, NotFoundError
+}
+func (c *Client) CreateProject(ctx context.Context, create *models.CreateProject) error {
 
-	return projects[0], nil
+	path := PATH_FMT_PROJECT_LIST
+
+	bytesData, err := json.Marshal(create)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	reader := bytes.NewReader(bytesData)
+	req, err := http.NewRequest(http.MethodPost, c.host+path, reader)
+	if err != nil {
+		return err
+	}
+
+	code, body, err := c.do(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+
+	if code >= 400 {
+		body_bytes, _ := ioutil.ReadAll(body)
+		return fmt.Errorf("http request failed(%d): %s", code, string(body_bytes))
+	}
+
+	return nil
 }

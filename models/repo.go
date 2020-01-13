@@ -25,6 +25,7 @@ type TagDetail struct {
 	Author        string     `json:"author"`
 	Created       time.Time  `json:"created"`
 	Config        *TagConfig `json:"config"`
+	Pull          string     `json:"pull"`
 }
 
 type TagConfig struct {

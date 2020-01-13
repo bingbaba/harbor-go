@@ -12,7 +12,7 @@ func TestProject(t *testing.T) {
 	}
 
 	// list project
-	ps, err := c.ListProjects(context.Background(), &ProjectOption{Name: "library", Public: "1"})
+	_, ps, err := c.ListProjects(context.Background(), &ProjectOption{Name: "library", Public: "1"})
 	if err != nil {
 		t.Fatal(err)
 	}
